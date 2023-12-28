@@ -19,7 +19,7 @@ const userController = {
 
             if (isMailExist) {
                 return res.json({
-                    message:message.Email_exist
+                    message: message.Email_exist
                 })
             }
             else if (isphoneExist) {
@@ -93,7 +93,7 @@ const userController = {
             }
             const Token = jwt.sign({ id: user._id }, "secret", { expiresIn: "30min" })
             return res.status(201).json({
-                message:message.Login_success_msg,
+                message: message.Login_success_msg,
                 Token
             })
 
@@ -151,7 +151,7 @@ const userController = {
         } catch (error) {
             console.log(error)
             return res.status(404).json({
-                message:message.Error_msg,
+                message: message.Error_msg,
                 error
             })
         }
@@ -177,7 +177,7 @@ const userController = {
 
             if (emailInUse) {
                 return res.status(402).json({
-                    message:message.Email_exist
+                    message: message.Email_exist
                 })
             }
             else if (PhoneInUse) {
@@ -303,7 +303,7 @@ const userController = {
                     }
                 )
                 return res.status(201).json({
-                    message:message.Pet_update_msg,
+                    message: message.Pet_update_msg,
                     updatePet
                 })
             }
@@ -492,3 +492,41 @@ module.exports = userController
 //     message: "success",
 //     userPets
 // })
+
+// function job() {
+//     return new Promise((resolve, reject)=>{
+//         setTimeout(()=>{
+//             resolve('hello world')
+//         },2000)
+//     })
+//     }
+//     job().then((res)=>{
+//         console.log(res)
+//     })
+
+function job(data) {
+    return new Promise((resolve, reject) => {
+        console.log(typeof data)
+        if (typeof data !== 'number') {
+            reject('error')
+        } else if (data %2 === 0) {
+            setTimeout(() => {
+                resolve('even')
+            }, 1000)
+        } else {
+            setTimeout(() => {
+                resolve('odd')
+            }, 2000)
+        }
+
+    })
+}
+
+job('12')
+    .then((res) => {
+        console.log(res)
+    })
+    .catch((err) => {
+        console.log(err)
+
+    })
