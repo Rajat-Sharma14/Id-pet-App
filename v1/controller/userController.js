@@ -28,8 +28,8 @@ const userController = {
                 })
             }
             else {
-                const hash = await bcrypt.hash(req.body.password, 10)
-                const hashpass = hash
+                const hashpass = await bcrypt.hash(req.body.password, 10)
+                // const hashpass = hash
                 const newuser = new User({
                     ownername: req.body.ownername,
                     ownersurname: req.body.ownersurname,
@@ -457,7 +457,44 @@ const userController = {
             })
         }
 
+    },
+    async paginatedUsers(req, res) {
+        try{
+
+        let search = ''
+        if (req.query.search) {
+            search = req.query.search
+        }
+        console.log(`jgjgg`,search) 
+
+        const resultUsers = await User.find({
+            $or: [
+                { ownername: { $regex: '.*' + search + '.*', $options: 'i' } },
+                { contactphone: isNaN(search) ? null : parseInt(search) },
+                { email: { $regex: '.*' + search + '.*', $options: 'i' } },
+
+            ],
+        })
+        res.send(resultUsers)
+    }catch(error){
+        res.json({error})
     }
+    }
+     // const page = parseInt(req.query.page)
+        // const limit = 2
+
+        // const startIndex = (page - 1) * limit
+        // const endIndex = (page * limit)
+        // const pageCount = Math.ceil(resultUsers.length / limit);
+        // console.log(pageCount)
+        // if (page > pageCount) {
+        //     return res.status(404).json({
+        //         message: 'No page found'
+        //     })
+        // }
+      
+    
+
 }
 module.exports = userController
 
@@ -506,10 +543,10 @@ module.exports = userController
 
 function job(data) {
     return new Promise((resolve, reject) => {
-        console.log(typeof data)
+        // console.log(typeof data)
         if (typeof data !== 'number') {
             reject('error')
-        } else if (data %2 === 0) {
+        } else if (data % 2 === 0) {
             setTimeout(() => {
                 resolve('even')
             }, 1000)
@@ -528,5 +565,4 @@ job('12')
     })
     .catch((err) => {
         console.log(err)
-
     })

@@ -20,5 +20,6 @@ router.get("/allUser",usercontroller.admin)
 router.get("/getUser",usercontroller.userWithPets)
 router.get("/allUserPets",usercontroller.allUserwithPets)
 router.post("/userRestrict",usercontroller.restrictUser)
+router.get('/pagination',usercontroller.paginatedUsers)
 
 module.exports = router
