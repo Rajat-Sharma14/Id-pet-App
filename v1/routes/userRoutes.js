@@ -1,6 +1,7 @@
 const express = require("express")
 const router = express.Router()
 const usercontroller = require("../controller/userController")
+const adminContoller = require("../controller/adminController")
 const sgmail = require("@sendgrid/mail")
 const verifyToken = require("../../jwt/jwtVerify")
 const upload = require("../../utils/multer.middelware") 
@@ -21,5 +22,6 @@ router.get("/getUser",usercontroller.userWithPets)
 router.get("/allUserPets",usercontroller.allUserwithPets)
 router.post("/userRestrict",usercontroller.restrictUser)
 router.get('/pagination',usercontroller.paginatedUsers)
+router.get('/editUserAdmin',verifyToken,adminContoller.editUserByAdmin)
 
 module.exports = router

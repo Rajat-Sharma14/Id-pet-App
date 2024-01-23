@@ -42,15 +42,15 @@ const userController = {
                 const otp = otpGenerator.generate(6, { digits: true, upperCaseAlphabets: false, lowerCaseAlphabets: false, specialChars: false });
                 // console.log(otp)
 
-                sgmail.setApiKey(process.env.SENDGRID_API_KEY);
-                // console.log(process.env.SENDGRID_API_KEY)
-                const msg = {
-                    from: 'kapil.devherds@gmail.com',
-                    to: req.body.email,
-                    subject: 'Forgot password',
-                    text: `Otp for verification ${otp}`
-                };
-                await sgmail.send(msg);
+                // sgmail.setApiKey(process.env.SENDGRID_API_KEY);
+                // // console.log(process.env.SENDGRID_API_KEY)
+                // const msg = {
+                //     from: 'kapil.devherds@gmail.com',
+                //     to: req.body.email,
+                //     subject: 'Forgot password',
+                //     text: `Otp for verification ${otp}`
+                // };
+                // await sgmail.send(msg);
                 const result = await newuser.save();
                 const Token = jwt.sign({ id: result._id }, "secret", { expiresIn: "30min" })
                 // User.token = Token
@@ -78,18 +78,20 @@ const userController = {
             // const mail = req.body.email
             // const password = req.body.password
             const user = await User.findOne({ email: req.body.email })
-            // console.log(User)
+            if (!user) {
+                return res.send({ message: message.Valid_mail_msg })
+            }
             if (user.restricted === true) {
                 return res.status(403).json({
                     message: message.Login_restriction_msg
                 })
             }
-            if (!user) {
-                return res.send(message.Valid_mail_msg)
-            }
-            const comparePassword = await bcrypt.compare(req.body.password, user.password)
+
+            const Password = req.body.password
+            const comparePassword = await bcrypt.compare(Password, user.password)
+            // console.log(comparePassword)
             if (!comparePassword) {
-                return res.send(message.Wrong_password)
+                return res.send({ message: message.Wrong_password })
             }
             const Token = jwt.sign({ id: user._id }, "secret", { expiresIn: "30min" })
             return res.status(201).json({
@@ -97,8 +99,10 @@ const userController = {
                 Token
             })
 
+
+
         } catch (error) {
-            res.status(401).json({ error })
+            res.status(401).json({ message: message.Error_msg, error })
         }
     },
     async forgotPassword(req, res) {
@@ -164,17 +168,19 @@ const userController = {
             const newWhatsapp = req.body.newWhatsapp
             const newEmail = req.body.newEmail
             const newPassword = req.body.newPassword
-            const hashNewPassword = await bcrypt.hash(newPassword, 10)
             const userId = req.user.id;
-            console.log(userId)
+            console.log(userId, "iiidddd")
             const user = await User.findOne({ _id: userId })
-            console.log(user)
+            console.log(user, "user")
             // const comparepassword = await bcrypt.compare(newPassword,user.password)
             // console.log(comparepassword)
-            const emailInUse = await User.findOne({ email: newEmail, _id: { $ne: userId } })
-            const PhoneInUse = await User.findOne({ contactphone: newPhone, _id: { $ne: userId } })
-            const whatsappInUse = await User.findOne({ whatsapp: newWhatsapp, _id: { $ne: userId } })
-
+            if (newPassword) {
+                var hashNewPassword = await bcrypt.hash(newPassword, 10)
+            }
+            const PhoneInUse = await User.findOne({ contactphone: newPhone })
+            const whatsappInUse = await User.findOne({ whatsapp: newWhatsapp })
+            const emailInUse = await User.findOne({ email: newEmail })
+            // console.log(emailInUse, "asdfgh")
             if (emailInUse) {
                 return res.status(402).json({
                     message: message.Email_exist
@@ -350,20 +356,22 @@ const userController = {
     async adminLogin(req, res) {
         try {
             const email = req.body.email
-            const user = Admin.findOne({ email })
+            const user = await Admin.findOne({ email })
+            // console.log(user)
             if (!user) {
-                return res.send(message.Invalid_user_msg)
+                return res.send({ message: message.Invalid_user_msg })
             }
-
-            const pass = bcrypt.compare(req.body.password, user.password)
+            const password = req.body.password
+            const pass = await bcrypt.compare(password, user.password)
+            // console.log(pass)
             if (!pass) {
-                return res.send(message.Wrong_password)
+                return res.send({ message: message.Wrong_password })
             }
             return res.status(201).json({
                 message: message.Admin_login_msg
             })
         } catch (error) {
-            res.status(401).json({ error })
+            res.status(401).json({ message: "error", error })
         }
     },
     async admin(req, res) {
@@ -381,7 +389,7 @@ const userController = {
     },
     async userWithPets(req, res) {
         try {
-            const _id = req.body.id
+            const _id = req.query.id
             const data = await User.findOne({ _id })
             if (!data) {
                 return res.send(message.User_notFound_msg)
@@ -459,43 +467,45 @@ const userController = {
 
     },
     async paginatedUsers(req, res) {
-        try{
+        try {
 
-        let search = ''
-        if (req.query.search) {
-            search = req.query.search
+            let search = ''
+            if (req.query.search) {
+                search = req.query.search
+            }
+            console.log(`jgjgg`, search)
+
+            const resultUsers = await User.find({
+                $or: [
+                    { ownername: { $regex: '.*' + search + '.*', $options: 'i' } },
+                    { contactphone: isNaN(search) ? null : parseInt(search) },
+                    { email: { $regex: '.*' + search + '.*', $options: 'i' } },
+
+                ],
+            })
+            res.send(resultUsers)
+        } catch (error) {
+            res.json({ error })
         }
-        console.log(`jgjgg`,search) 
-
-        const resultUsers = await User.find({
-            $or: [
-                { ownername: { $regex: '.*' + search + '.*', $options: 'i' } },
-                { contactphone: isNaN(search) ? null : parseInt(search) },
-                { email: { $regex: '.*' + search + '.*', $options: 'i' } },
-
-            ],
-        })
-        res.send(resultUsers)
-    }catch(error){
-        res.json({error})
     }
-    }
-     // const page = parseInt(req.query.page)
-        // const limit = 2
-
-        // const startIndex = (page - 1) * limit
-        // const endIndex = (page * limit)
-        // const pageCount = Math.ceil(resultUsers.length / limit);
-        // console.log(pageCount)
-        // if (page > pageCount) {
-        //     return res.status(404).json({
-        //         message: 'No page found'
-        //     })
-        // }
-      
-    
-
+   
 }
+
+
+// const page = parseInt(req.query.page)
+// const limit = 2
+
+// const startIndex = (page - 1) * limit
+// const endIndex = (page * limit)
+// const pageCount = Math.ceil(resultUsers.length / limit);
+// console.log(pageCount)
+// if (page > pageCount) {
+//     return res.status(404).json({
+//         message: 'No page found'
+//     })
+// }
+
+
 module.exports = userController
 
 // const userPets = await pet.aggregate([
@@ -566,3 +576,4 @@ job('12')
     .catch((err) => {
         console.log(err)
     })
+
