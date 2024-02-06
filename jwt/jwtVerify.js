@@ -13,7 +13,7 @@ const verify = {
             }
             req.user = decoded;
         })
-        next()
+        return next()
     }
 }
 module.exports = verify.verifyToken

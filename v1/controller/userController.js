@@ -246,7 +246,6 @@ const userController = {
                 petChipNo: chipNo,
                 date: req.body.date,
                 noteAndInfo: req.body.noteAndInfo
-
             })
             const result = await newPet.save()
             return res.status(201).json({
@@ -260,7 +259,6 @@ const userController = {
     },
     async userPet(req, res) {
         try {
-
             const data = await pet.find({ userId: req.user.id })
             res.status(201).json({
                 message: message.Data_fetch_success_msg,
@@ -354,12 +352,14 @@ const userController = {
         }
     },
     async adminLogin(req, res) {
+        if (!req.body.email) return res.json({ success: false, message: "Email required" })
+        if (!req.body.password) return res.json({ success: false, message: "Please Enter Your Password" })
         try {
             const email = req.body.email
             const user = await Admin.findOne({ email })
             // console.log(user)
             if (!user) {
-                return res.send({ message: message.Invalid_user_msg })
+                return res.send({ success: false, message: message.Invalid_user_msg })
             }
             const password = req.body.password
             const pass = await bcrypt.compare(password, user.password)
@@ -368,6 +368,7 @@ const userController = {
                 return res.send({ message: message.Wrong_password })
             }
             return res.status(201).json({
+                success: true,
                 message: message.Admin_login_msg
             })
         } catch (error) {
@@ -376,11 +377,30 @@ const userController = {
     },
     async admin(req, res) {
         try {
-            const data = await User.find()
-            res.json({
-                message: message.Alluser_msg,
-                data
-            })
+            const page = parseInt(req.query.page) || 1
+            const limit = parseInt(req.query.limit)||5
+
+            const startIndex = (page - 1) * limit
+            // const endIndex = (page * limit)
+            const totalUsers=  await User.find()
+            // console.log(totalUsers.length,"totaluser")
+            const pageCount = Math.ceil(totalUsers.length / limit);
+            // console.log(pageCount)
+            if (page > pageCount) {
+                return res.status(404).json({
+                    message: 'No page found'
+                })
+            } else {
+                const data = await User.find().skip(startIndex).limit(limit)
+                res.json({
+                    message: message.Alluser_msg,
+                    data,
+                    pagination: {
+                        currentPage: page,
+                        totalPages: pageCount
+                    }
+                })
+            }
         } catch (error) {
             res.json({
                 error
@@ -456,8 +476,6 @@ const userController = {
             } else {
                 return res.send("No user with this id")
             }
-
-
         }
         catch (error) {
             res.status(400).json({
@@ -480,17 +498,27 @@ const userController = {
                     { ownername: { $regex: '.*' + search + '.*', $options: 'i' } },
                     { contactphone: isNaN(search) ? null : parseInt(search) },
                     { email: { $regex: '.*' + search + '.*', $options: 'i' } },
-
                 ],
             })
             res.send(resultUsers)
         } catch (error) {
             res.json({ error })
         }
+    },
+    async updateSocialLinkAction(req, res) {
+        let action = req.body.action
+        socialLinks.findByIdAndUpdate(req.params.id, action, { new: true }).then(result => {
+            res.json({
+                success: true,
+                message: msg.UPDATESUCCESS,
+                data: result
+            })
+        }).catch(err => {
+            console.log(err)
+        })
     }
-   
 }
-
+module.exports = userController
 
 // const page = parseInt(req.query.page)
 // const limit = 2
@@ -504,9 +532,6 @@ const userController = {
 //         message: 'No page found'
 //     })
 // }
-
-
-module.exports = userController
 
 // const userPets = await pet.aggregate([
 //     {
@@ -551,29 +576,47 @@ module.exports = userController
 //         console.log(res)
 //     })
 
-function job(data) {
-    return new Promise((resolve, reject) => {
-        // console.log(typeof data)
-        if (typeof data !== 'number') {
-            reject('error')
-        } else if (data % 2 === 0) {
-            setTimeout(() => {
-                resolve('even')
-            }, 1000)
-        } else {
-            setTimeout(() => {
-                resolve('odd')
-            }, 2000)
-        }
+// function job(data) {
+//         return new Promise((resolve, reject) => {
+//             console.log(typeof data)
+//             if (typeof data !== 'number') {
+//                 reject('error')
+//             } else if (data % 2 === 0) {
+//                 setTimeout(() => {
+//                     resolve('even')
+//                 }, 1000)
+//             } else {
+//                 setTimeout(() => {
+//                     resolve('odd')
+//                 }, 2000)
+//             }
 
-    })
-}
+//         })
+// }
 
-job('12')
-    .then((res) => {
-        console.log(res)
-    })
-    .catch((err) => {
-        console.log(err)
-    })
+// job('12')
+//     .then((res) => {
+//         console.log(res)
+//     })
+//     .catch((err) => {
+//         console.log(err)
+//     })
 
+
+// var verifyCode = Math.floor(1000 + Math.random() * 9000)
+// console.log(verifyCode, "code")
+// var num = Math.random() * 9000 + 1000
+// var Num = Math.floor(num)
+// console.log(Num)
+// totalUsers = 99980
+// let num
+// if (totalUsers > 999 && totalUsers < 9999) {
+//     num =  (totalUsers + 1)
+// }
+// console.log(num)
+
+// for(i=1;i<=3;i++)
+// // console.log(i)
+// setTimeout(()=>{
+// console.log(i)
+// },1000)
